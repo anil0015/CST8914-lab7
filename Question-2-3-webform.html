@@ -22,30 +22,56 @@
     }
     
     fieldset ul {
-      margin: 0;
-    }</style>
+      margin: 0;  
+    }
+        /* Added so errors area can be focused for keyboard and SR users */
+      fieldset.errors {
+        border: 2px solid #c00;
+        padding: 0.75rem;
+      }
+
+      fieldset.errors:focus {
+        outline: 3px solid #006b3a;
+        outline-offset: 2px;
+      }
+
+      /* Hidden helper text for screen readers */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+        border: 0;
+      }
+    </style>
     </head>
     <body>
         <h1>Feedback form</h1>
-    <form>
-        <div class="control">
-          <label>Full name <span class="required">*</span></label><input id="name" name="name" type="text" />
+    <!-- Form with novalidate to control validation behavior -->
+    <form id="feedback-form" novalidate>
+        <!-- Required field identified in text and with aria-required -->
+        <div class="control"> 
+          <label for="name">Full name <span class="required" aria-hidden="true">*</span>(required)</label><input id="name" name="name" type="text" aria-required="true" />
+          <!-- Inline SR-only instruction -->
+          <div id="name_help" class="sr-only">Enter your full name.</div>
         </div>
-        <div class="control">
-          <label>Biography</label><textarea id="biography" name="biography" type="text"></textarea>
-          <span>Include examples on your skills in JavaScript.</span>
+        <!-- Field with inline visible instructions for all users -->
+        <div class="control" >
+          <label for="biography">Biography</label><textarea id="biography" name="biography" aria-describedby="bio_help"></textarea>
+          <span id="bio_help">Include examples on your skills in JavaScript.</span>
         </div>
-        
-          <div>Gender</div>
-          <div class="control">
-            <input id="gender_male" name="gender" type="radio" value="male" /><label>Male</label>
-          </div>
-          <div class="control">
-            <input id="gender_female" name="gender" type="radio" value="female" /><label>Female</label>
-          </div>
-        
+        <!-- Grouping related controls with a fieldset and legend -->
+        <fieldset class="control">
+          <legend>Gender<span class="required" aria-hidden="true">*</span> (required)</legend>
+          <input id="gender_male" name="gender" type="radio" value="male" /><label for="gender_male">Male</label>
+          <input id="gender_female" name="gender" type="radio" value="female" /><label for="gender_female">Female</label>
+        </fieldset>
+        <!-- Checkbox with visible required indication -->
         <div class="control">
-          <input id="accept_agbs" name="accept_agbs" type="checkbox" value="1" /><label>I accept the terms and conditions</label>
+          <input id="accept_agbs" name="accept_agbs" type="checkbox" value="1" aria-required="true" /><label for="accept_agbs">I accept the terms and conditions <span class="required" aria-hidden="true">*</span> (required)</label>
         </div>
         <div class="control">
           <input name="validate" type="hidden" value="1" /><input type="submit" value="Register" />
@@ -76,7 +102,8 @@
       
           if ((value = $.urlParam(input)) === null) {
             if ($('fieldset.errors').length === 0) {
-              $('form').prepend('<fieldset class="errors"><legend>Errors</legend><ul></ul></fieldset>');
+              // Added role + tabindex for accessibility
+              $('form').prepend('<fieldset class="errors" role="alert" tabindex="-1"><legend>Errors</legend><ul></ul></fieldset>');
             }
       
             $referencedElement = null;
@@ -92,7 +119,8 @@
               $referencedElement = $input;
             }
       // R.G. hint: fix next line ;)
-            $error = $('<a>' + message + '</a>');
+      // Error message as link to field
+            $error = $('<a href="#' + $referencedElement.attr('id') + '">' + message + '</a>');
             $error.click(function (e) {
               // If we rely on the link's href pointing to the input's ID, it doesn't trigger forms mode in screen readers
               $referencedElement.focus();
@@ -101,7 +129,9 @@
             $elementToDescribe.attr('aria-describedby', input + '_description');
             $errorContainer.append('<li>').find('li:last').append($error);
       
+            // Focus management: move to error area first  
             if ($(':not(form):focus').length === 0) {
+              $('fieldset.errors').focus();
               // See https://stackoverflow.com/questions/46134247/jquery-setting-focus-doesnt-work-in-ie11/
             
             }
@@ -120,12 +150,13 @@
       
         $(document).ready(function () {
           if ($.urlParam('validate')) {
+            // Check all required fields
             validateInput('name', 'Please enter your name!');
             validateInput('biography', 'Please tell us something about your history!');
             validateInput('gender', 'Please tell us your gender!');
             validateInput('accept_agbs', 'You must accept our terms and conditions!');
-      
-            if ($('.error').length === 0) {
+            // Only alert if no errors
+            if ($('fieldset.errors ul li').length === 0) {
               return alert('All inputs are valid.');
             }
           }
